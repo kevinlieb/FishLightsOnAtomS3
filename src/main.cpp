@@ -6,14 +6,13 @@
 #include <time.h> 
 #include <LittleFS.h>
 
-#define LED_PIN 1       // Atom S3
-//#define NUM_LEDS 8+16+8 // (the helmet turn signal rig)
-#define NUM_LEDS 43 // (the helmet turn signal rig)
+#define LED_PIN 1       // Atom S3 grove connector LED pin
+#define NUM_LEDS 43 // (this just happens to be the number of LED's I am exposing)
 
 CRGB leds[NUM_LEDS];
 
 const char* ssid     = "LuciernagaGoogleWifi";
-const char* password = "asdf1234";
+const char* password = "xxxxxxxx";
 
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -8 * 3600;   // PST (change for your zone)
@@ -35,9 +34,7 @@ static const char * const COLOR_NAMES[] = {
   "Off"
 };
 
-// -------- Animation -----
-int x = 20;
-int dx = 2;
+/* set initial LED color */
 uint8_t ledMode = LED_WHITE;
 uint8_t hue = 0;
 
@@ -76,18 +73,15 @@ void setup() {
     Serial.println("LittleFS Mount Failed");
     return;
   }
-    // ---- FastLED Init ----
+
+  // ---- FastLED Init ----
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
   FastLED.setBrightness(brightness);
 
   Serial.begin(115200);
   Serial.println("Hello world!");
 
-  // M5.Display.setTextSize(2);
-  // M5.Display.setCursor(10, 10);
-  // M5.Display.println("Hello Atom S3!");
-
-    // Create sprite the same size as screen
+  // Create sprite the same size as screen
   sprite.setColorDepth(16);      // 16-bit color (safe choice)
   sprite.createSprite(
       M5.Display.width(),
@@ -97,6 +91,7 @@ void setup() {
   FastLED.showColor(CRGB::Blue);
   FastLED.show();
 
+  /* start Wifi in station mode (connect to home wifi) */
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   syncTime();
@@ -154,8 +149,6 @@ void loop() {
   sprite.fillSprite(BLACK);
   sprite.setTextSize(1);
   sprite.setTextColor(WHITE);
-  //sprite.setCursor(10, 15);
-  //sprite.println("Atom S3 Sprite Demo");
 
   /* if time is set then display it */
   if(timeinfo.tm_year > 0) {
@@ -163,7 +156,7 @@ void loop() {
     sprite.setCursor(10, 0);
     sprite.println(&timeinfo, "%Y-%m-%d %H:%M:%S");        
 
-    /* timed events */
+    /* timed events: DO THIS BETTER! */
     if(timeinfo.tm_hour == 07 && timeinfo.tm_min == 05 && timeinfo.tm_sec < 5) {      
       ledMode = LED_WHITE;
     }
@@ -173,16 +166,13 @@ void loop() {
     }    
 
   }
-  else {
-    //Serial.println(&timeinfo, "%Y-%m-%d %H:%M:%S");        
-  }
 
-  //sprite.fillCircle(64, 64, 10, GREEN);
   sprite.setCursor(6, 64);
   sprite.setTextSize(2);
   sprite.println(COLOR_NAMES[ledMode]);
   sprite.drawRect(5, 25, 118, 70, BLUE);  
 
+  /* check for button presses or holdings */
   if(M5.BtnA.isHolding()) {
     displayTimeoutMillis = millis();
     Serial.println("Holding!");
@@ -190,7 +180,6 @@ void loop() {
     FastLED.setBrightness(brightness);
   }
   else {
-
     if (M5.BtnA.wasPressed()) {
       displayTimeoutMillis = millis();
       ledMode ++;
@@ -201,6 +190,7 @@ void loop() {
   }
 
 
+  /* If wifi is connected print Wifi to the screen */
   if(WiFi.status() == WL_CONNECTED) {
     sprite.setTextSize(1);
     sprite.setCursor(10, 100);
@@ -210,7 +200,7 @@ void loop() {
   /* update the variable with time once a second */
   if(millis() - lastMillis > 1000)  {
     lastMillis = millis();
-    //struct tm timeinfo;
+
     getLocalTime(&timeinfo);
     if(timeinfo.tm_year == 0) {
       syncTime();
